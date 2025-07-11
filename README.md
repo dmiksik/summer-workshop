@@ -1,24 +1,21 @@
-# summer-workshop
+# Summer Workshop 2025
 Níže je návrh snímku/notebookové buňky, kterou vložíte do JupyterLab (či jiného notebooku) jako Úvod k REST API. Obsahuje stručné vysvětlení a ukázky 4 základních metod s knihovnou requests.
 
-markdown
-Copy
-Edit
-## Úvod k REST API
+## 1. Úvod k REST API
 
-**HTTP metody**  
+### HTTP metody  
 - `GET`  – načtení dat  
 - `POST` – vytvoření nového záznamu  
 - `PUT`  – aktualizace existujícího záznamu  
 - `DELETE` – odstranění záznamu  
 
-**Základní hlavičky**  
+#### Základní hlavičky  
 ```http
 Content-Type: application/json  
 Authorization: Bearer <YOUR_TOKEN>
-python
-Copy
-Edit
+```
+
+```python
 # 1) Import a základní nastavení
 import requests
 API_BASE = "https://inveniordm.web.cern.ch/api/records"
@@ -67,10 +64,12 @@ print("PUT /records/{id}/draft →", resp.status_code)
 url = f"{API_BASE}/{record_id}"
 resp = requests.delete(url, headers=headers)
 print("DELETE /records/{id} →", resp.status_code)
-Poznámka:
+```
 
-Nahraďte API_BASE a TOKEN svými hodnotami.
+**Poznámka:**
 
-V příkladu pro PUT a DELETE se předpokládá, že záznam je ve stavu „draft“ a že máte právo jej smazat.
+Nahraďte `API_BASE` a `TOKEN` svými hodnotami.
+
+V příkladu pro `PUT` a `DELETE` se předpokládá, že záznam je ve stavu „draft“ a že máte právo jej smazat.
 
 Tento úvodní snímek/nebo blok kódu dává účastníkům přehled nejčastěji používaných operací a připraví je na další hands-on části workshopu.
