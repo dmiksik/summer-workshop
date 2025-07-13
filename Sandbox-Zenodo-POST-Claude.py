@@ -152,8 +152,8 @@ def convert_yaml_to_zenodo(yaml_data):
             if rel_id['scheme'] == 'doi':  # Zenodo podporuje hlavně DOI
                 related_identifiers.append({
                     'identifier': rel_id['identifier'],
-                    'relation': rel_id['relation_type'],
-                    'scheme': 'doi'
+                    'relation': rel_id['relation_type']
+                    # 'scheme' se neposílá - Zenodo ho automaticky detekuje z formátu
                 })
         if related_identifiers:
             zenodo_metadata['related_identifiers'] = related_identifiers
