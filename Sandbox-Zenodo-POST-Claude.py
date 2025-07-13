@@ -513,10 +513,11 @@ def upload_file(bucket_url, file_path):
     print(f"📥 Odpověď ze serveru:")
     print(f"Status kód: {response.status_code}")
     
-    if response.status_code == 200:
+    if response.status_code in [200, 201]:  # 200 nebo 201 jsou oba úspěšné
         file_info = response.json()
         print(f"✅ Soubor {filename} úspěšně nahrán!")
-        print(f"ID souboru: {file_info['id']}")
+        print(f"Velikost na serveru: {file_info['size']} bytů")
+        print(f"MIME type: {file_info['mimetype']}")
         print(f"Kontrolní součet: {file_info['checksum']}")
         return file_info
     else:
