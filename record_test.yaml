@@ -51,6 +51,7 @@ license:
 #  - funder_name: Grantová agentura ČR
 #    funder_identifier: https://ror.org/02yvh6w08
 #    award_number: GA23-4567
+# strojově to takto nejde
 
 funding:
   - grant_id: 101188015
@@ -58,21 +59,18 @@ funding:
     funder_identifier: 10.13039/501100000780
 
 related_identifiers:
-  - scheme: doi
-    identifier: 10.1016/j.shibainu.2024.03.001
+  - identifier: 10.1016/j.shibainu.2024.03.001
     relation_type: isSupplementTo
-  # ROR identifikátory institucí
-  - scheme: ror
-    identifier: https://ror.org/03yrm5c26    # Masarykova univerzita
-    relation_type: isAffiliatedWith
-  - scheme: ror
-    identifier: https://ror.org/02yc77q47    # Univerzita Karlova
-    relation_type: isAffiliatedWith
+
+contributors:
+  - name: Hošková, Lucie
+    type: DataCurator
+    affiliation: Univerzita Karlova
+    orcid: 0009-0001-9695-2342
 
 embargo:
   active: false
   until: null
 
 communities:
-  - id: demo-community
-  - id: another-community
+  - id: eosc-cz-summer-workshop

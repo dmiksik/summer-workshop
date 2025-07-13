@@ -111,9 +111,49 @@ def convert_yaml_to_zenodo(yaml_data):
     if 'keywords' in yaml_data:
         zenodo_metadata['keywords'] = yaml_data['keywords']
     
+    # Předměty/subjects z kontrolovaného slovníku
+    if 'subjects' in yaml_data:
+        subjects = []
+        for subject in yaml_data['subjects']:
+            subject_entry = {
+                'term': subject['term'],
+                'identifier': subject['identifier']
+            }
+            # scheme se automaticky detekuje, ale můžeme ho poslat
+            if 'scheme' in subject:
+                subject_entry['scheme'] = subject['scheme']
+            subjects.append(subject_entry)
+        zenodo_metadata['subjects'] = subjects
+    
     # Licence
     if 'license' in yaml_data:
         zenodo_metadata['license'] = yaml_data['license']['id']
+    
+    # Contributors (přispěvatelé)
+    if 'contributors' in yaml_data:
+        contributors = []
+        for contributor in yaml_data['contributors']:
+            zenodo_contributor = {
+                'name': contributor['name'],
+                'type': contributor['type']
+            }
+            if 'affiliation' in contributor:
+                zenodo_contributor['affiliation'] = contributor['affiliation']
+            if 'orcid' in contributor:
+                zenodo_contributor['orcid'] = contributor['orcid']
+            contributors.append(zenodo_contributor)
+        zenodo_metadata['contributors'] = contributors
+    
+    # Communities (komunity)
+    if 'communities' in yaml_data:
+        communities = []
+        for community in yaml_data['communities']:
+            if isinstance(community, dict) and 'id' in community:
+                communities.append({'identifier': community['id']})
+            elif isinstance(community, str):
+                communities.append({'identifier': community})
+        if communities:
+            zenodo_metadata['communities'] = communities
     
     # Předměty/subjects (pokud jsou definovány) - POZOR: Zenodo má omezené podpory pro subjects
     # Raději je přeskočíme, protože mohou způsobovat chyby
@@ -383,30 +423,33 @@ if 'deposition_id' in locals():
 # ## Správný formát grants pole podle Zenodo API
 
 # %%
-print("📋 FORMÁT GRANTS podle Zenodo dokumentace:")
-print("=" * 50)
+print("📋 PŘIDANÁ POLE do konverze:")
+print("=" * 40)
 print()
-print("✅ SPRÁVNÝ formát:")
-print("  grants: [{'id': 'grant_id'}]")
-print() 
-print("📝 Příklady:")
-print("  - EC grant: [{'id': '283595'}]")
-print("  - DOI-prefixed (doporučeno): [{'id': '10.13039/501100000780::283595'}]")
-print("  - Váš grant 101188015: [{'id': '101188015'}]")
+print("✅ SUBJECTS:")
+print("  - Podporuje kontrolované slovníky")
+print("  - Format: term + identifier + scheme")
+print("  - Příklad z YAMLu: Astronomy, Computer science, etc.")
 print()
-print("❌ NESPRÁVNÝ formát (ten co jsme používali):")
-print("  [{'title': 'Funder Name', 'code': 'GA23-4567'}]")
+print("✅ CONTRIBUTORS:")
+print("  - Přispěvatelé (ne autoři)")
+print("  - Format: name + type + affiliation + orcid")
+print("  - Typy: DataCurator, Editor, Supervisor, etc.")
 print()
-print("💡 Pro váš YAML soubor přidejte:")
-print("funding:")
-print("  - funder_name: European Commission")
-print("    funder_identifier: 10.13039/501100000780")
-print("    grant_id: '101188015'")
+print("✅ COMMUNITIES:")
+print("  - Komunity na Zenodo")
+print("  - Format: identifier")
+print("  - Příklad: eosc-cz-summer-workshop")
 print()
-print("nebo jednoduše:")
-print("funding:")
-print("  - grant_id: '101188015'")
-print("    funder_name: European Commission")
+print("📝 YAML příklad:")
+print("contributors:")
+print("  - name: Hošková, Lucie")
+print("    type: DataCurator")
+print("    affiliation: Univerzita Karlova")
+print("    orcid: 0009-0001-9695-2342")
+print()
+print("communities:")
+print("  - id: eosc-cz-summer-workshop")
 
 # %%
 def create_safe_zenodo_metadata(yaml_data):
