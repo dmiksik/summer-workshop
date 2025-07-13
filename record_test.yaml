@@ -1,28 +1,23 @@
 title: Ukázkový dataset pro workshop
-publication_date: 2025-07-15
-resource_type: dataset
-
-creators:
-  - given_name: Daniel
-    family_name: Mikšík
-    orcid: 0009-0008-6214-4356
-    affiliation_text: Masarykova univerzita
-    role: other
-  - given_name: Milan
-    family_name: Janíček
-    orcid: 0000-0002-8271-3674
-    affiliation_text: Univerzita Karlova
-    role: rightsholder
-
+upload_type: dataset
 description: |
   Krátký popis datasetu, jeho účel, obsah a možnost reprodukce.
+publication_date: 2025-07-15
+language: cs
+
+creators:
+  - name: Mikšík, Daniel
+    orcid: 0009-0008-6214-4356
+    affiliation: Masarykova univerzita
+  - name: Janíček, Milan
+    orcid: 0000-0002-8271-3674
+    affiliation: Univerzita Karlova
 
 keywords:
   - machine learning
   - image classification
   - shiba inu
 
-# Subjects pouze z kontrolovaného slovníku
 subjects:
   - term: Astronomy
     identifier: http://id.loc.gov/authorities/subjects/sh85009003
@@ -33,34 +28,15 @@ subjects:
   - term: Environment
     identifier: http://eurovoc.europa.eu/100277
     scheme: url
-  - term: Education
-    identifier: http://eurovoc.europa.eu/1247
-    scheme: url
-  - term: Social policy
-    identifier: http://eurovoc.europa.eu/100140
-    scheme: url
 
-language:
-  id: cs
-  title: Čeština
+license: cc-by-4.0
 
-license:
-  id: cc-by-4.0
-
-#funding:
-#  - funder_name: Grantová agentura ČR
-#    funder_identifier: https://ror.org/02yvh6w08
-#    award_number: GA23-4567
-# strojově to takto nejde
-
-funding:
-  - grant_id: 101188015
-    funder_name: European Commission  
-    funder_identifier: 10.13039/501100000780
+grants:
+  - id: 101188015
 
 related_identifiers:
   - identifier: 10.1016/j.shibainu.2024.03.001
-    relation_type: isSupplementTo
+    relation: isSupplementTo
 
 contributors:
   - name: Hošková, Lucie
@@ -68,9 +44,5 @@ contributors:
     affiliation: Univerzita Karlova
     orcid: 0009-0001-9695-2342
 
-embargo:
-  active: false
-  until: null
-
 communities:
-  - id: eosc-cz-summer-workshop
+  - identifier: eosc-cz-summer-workshop
