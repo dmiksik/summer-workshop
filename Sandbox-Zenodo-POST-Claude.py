@@ -123,16 +123,27 @@ def convert_yaml_to_zenodo(yaml_data):
     #         for subject in yaml_data['subjects']
     #     ]
     
-    # Financování - POZOR: grants pole často způsobuje chyby v Zenodo API
-    # Raději ho přeskočíme pro stabilní fungování
-    # if 'funding' in yaml_data:
-    #     grants = []
-    #     for fund in yaml_data['funding']:
-    #         grant = {'title': fund['funder_name']}
-    #         if 'award_number' in fund:
-    #             grant['code'] = fund['award_number']
-    #         grants.append(grant)
-    #     zenodo_metadata['grants'] = grants
+    # Financování - správný formát podle Zenodo API dokumentace
+    if 'funding' in yaml_data:
+        grants = []
+        for fund in yaml_data['funding']:
+            # Pokud má grant_id, použijeme ho
+            if 'grant_id' in fund:
+                grant_id = fund['grant_id']
+                # Pokud má funder_identifier, použijeme DOI-prefixed formát (doporučený)
+                if 'funder_identifier' in fund and fund['funder_identifier'].startswith('10.13039/'):
+                    grant_id = f"{fund['funder_identifier']}::{grant_id}"
+                grants.append({'id': grant_id})
+            # Alternativně pokud má award_number a je to EC grant
+            elif 'award_number' in fund and 'funder_name' in fund:
+                if 'Evropsk' in fund['funder_name'] or 'European' in fund['funder_name']:
+                    # Pokusíme se extrahovat číslo grantu z award_number
+                    award_num = fund['award_number'].replace('GA', '').replace('-', '')
+                    if award_num.isdigit():
+                        grants.append({'id': award_num})
+        
+        if grants:
+            zenodo_metadata['grants'] = grants
     
     # Související identifikátory - pouze DOI
     if 'related_identifiers' in yaml_data:
@@ -333,16 +344,27 @@ if 'deposition_id' in locals():
         updated_deposition = update_metadata(deposition_id, extended_metadata)
         
         if updated_deposition:
-            print("✅ Rozšířená metadata fungují!")
-            print("⚠️  Pole 'grants' přeskakujeme - často způsobuje chyby 500 v Zenodo")
+            print("✅ Rozšířená metadata fungují! Zkusíme přidat grants...")
             
-            # Přidáme related_identifiers (bez grants)
-            final_metadata = extended_metadata.copy()
-            if 'related_identifiers' in zenodo_metadata:
-                final_metadata['related_identifiers'] = zenodo_metadata['related_identifiers']
+            # Přidáme grants se správným formátem
+            full_metadata = extended_metadata.copy()
+            if 'grants' in zenodo_metadata:
+                full_metadata['grants'] = zenodo_metadata['grants']
+                print(f"📋 Grants k přidání: {zenodo_metadata['grants']}")
             
-            print("\n3️⃣ Zkouším přidat related_identifiers (bez grants):")
-            updated_deposition = update_metadata(deposition_id, final_metadata)
+            print("\n3️⃣ Zkouším s grants (správný formát):")
+            updated_deposition = update_metadata(deposition_id, full_metadata)
+            
+            if updated_deposition:
+                print("✅ Metadata s grants fungují! Zkusíme přidat related_identifiers...")
+                
+                # Přidáme related_identifiers
+                complete_metadata = full_metadata.copy()
+                if 'related_identifiers' in zenodo_metadata:
+                    complete_metadata['related_identifiers'] = zenodo_metadata['related_identifiers']
+                
+                print("\n4️⃣ Zkouším kompletní metadata:")
+                updated_deposition = update_metadata(deposition_id, complete_metadata)
     else:
         print("❌ Ani základní metadata nefungují. Zkusíme minimální verzi...")
         
@@ -358,30 +380,33 @@ if 'deposition_id' in locals():
         updated_deposition = update_metadata(deposition_id, minimal_metadata)
 
 # %% [markdown]
-# ## Poznámky k problematickým polím v Zenodo API
+# ## Správný formát grants pole podle Zenodo API
 
 # %%
-print("📋 ŘEŠENÍ PROBLEMATICKÝCH POLÍ:")
+print("📋 FORMÁT GRANTS podle Zenodo dokumentace:")
 print("=" * 50)
 print()
-print("❌ GRANTS pole:")
-print("  - Často způsobuje chybu 500 v sandbox.zenodo.org")
-print("  - Vyžaduje specifický formát s funder identifikátory")
-print("  - Doporučení: přidat ručně přes web rozhraní po vytvoření záznamu")
+print("✅ SPRÁVNÝ formát:")
+print("  grants: [{'id': 'grant_id'}]")
+print() 
+print("📝 Příklady:")
+print("  - EC grant: [{'id': '283595'}]")
+print("  - DOI-prefixed (doporučeno): [{'id': '10.13039/501100000780::283595'}]")
+print("  - Váš grant 101188015: [{'id': '101188015'}]")
 print()
-print("⚠️  SUBJECTS pole:")
-print("  - Zenodo má omezený slovník kontrolovaných termínů")
-print("  - Často lepší použít keywords místo subjects")
+print("❌ NESPRÁVNÝ formát (ten co jsme používali):")
+print("  [{'title': 'Funder Name', 'code': 'GA23-4567'}]")
 print()
-print("✅ FUNGUJÍCÍ pole:")
-print("  - title, description, creators")
-print("  - language, keywords, license")  
-print("  - related_identifiers (s DOI)")
+print("💡 Pro váš YAML soubor přidejte:")
+print("funding:")
+print("  - funder_name: European Commission")
+print("    funder_identifier: 10.13039/501100000780")
+print("    grant_id: '101188015'")
 print()
-print("💡 TIP pro workshop:")
-print("  - Začněte s básickými poli")
-print("  - Složitější metadata přidávejte postupně")
-print("  - Grants a funding přidávejte ručně přes web")
+print("nebo jednoduše:")
+print("funding:")
+print("  - grant_id: '101188015'")
+print("    funder_name: European Commission")
 
 # %%
 def create_safe_zenodo_metadata(yaml_data):
