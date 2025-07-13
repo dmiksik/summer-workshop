@@ -47,6 +47,16 @@ try:
     print(f"Jazyk: {metadata_yaml['language']['title']}")
     print(f"Licence: {metadata_yaml['license']['id']}")
     
+    # Zobrazíme i další pole pokud existují
+    if 'subjects' in metadata_yaml:
+        print(f"Subjects: {len(metadata_yaml['subjects'])} položek")
+    if 'contributors' in metadata_yaml:
+        print(f"Contributors: {len(metadata_yaml['contributors'])} osob")
+    if 'communities' in metadata_yaml:
+        print(f"Communities: {len(metadata_yaml['communities'])} komunit")
+    if 'funding' in metadata_yaml:
+        print(f"Funding: {len(metadata_yaml['funding'])} grantů")
+    
 except FileNotFoundError:
     print(f"❌ Soubor {yaml_file} nebyl nalezen!")
     print("Vytvoříme testovací metadata...")
@@ -155,21 +165,13 @@ def convert_yaml_to_zenodo(yaml_data):
         if communities:
             zenodo_metadata['communities'] = communities
     
-    # Předměty/subjects (pokud jsou definovány) - POZOR: Zenodo má omezené podpory pro subjects
-    # Raději je přeskočíme, protože mohou způsobovat chyby
-    # if 'subjects' in yaml_data:
-    #     zenodo_metadata['subjects'] = [
-    #         {'term': subject['term'], 'identifier': subject.get('identifier', '')}
-    #         for subject in yaml_data['subjects']
-    #     ]
-    
     # Financování - správný formát podle Zenodo API dokumentace
     if 'funding' in yaml_data:
         grants = []
         for fund in yaml_data['funding']:
             # Pokud má grant_id, použijeme ho
             if 'grant_id' in fund:
-                grant_id = fund['grant_id']
+                grant_id = str(fund['grant_id'])
                 # Pokud má funder_identifier, použijeme DOI-prefixed formát (doporučený)
                 if 'funder_identifier' in fund and fund['funder_identifier'].startswith('10.13039/'):
                     grant_id = f"{fund['funder_identifier']}::{grant_id}"
@@ -189,7 +191,8 @@ def convert_yaml_to_zenodo(yaml_data):
     if 'related_identifiers' in yaml_data:
         related_identifiers = []
         for rel_id in yaml_data['related_identifiers']:
-            if rel_id['scheme'] == 'doi':  # Zenodo podporuje hlavně DOI
+            # Filtrujeme pouze DOI nebo berme všechny pokud scheme není definováno
+            if 'scheme' not in rel_id or rel_id['scheme'] == 'doi':
                 related_identifiers.append({
                     'identifier': rel_id['identifier'],
                     'relation': rel_id['relation_type']
@@ -208,6 +211,7 @@ def convert_yaml_to_zenodo(yaml_data):
 zenodo_metadata = convert_yaml_to_zenodo(metadata_yaml)
 
 print("🔄 Metadata konvertována do formátu Zenodo:")
+print(f"📋 Odesílaná pole: {list(zenodo_metadata.keys())}")
 try:
     print(json.dumps(zenodo_metadata, indent=2, ensure_ascii=False))
 except TypeError as e:
@@ -307,6 +311,7 @@ def update_metadata(deposition_id, metadata):
     print(f"📤 Aktualizujeme metadata pro záznam {deposition_id}")
     print(f"URL: {url}")
     print("Odesílaná metadata:")
+    print(f"📋 Pole: {list(metadata.keys())}")
     try:
         print(json.dumps(data, indent=2, ensure_ascii=False))
     except Exception as e:
@@ -392,18 +397,26 @@ if 'deposition_id' in locals():
                 full_metadata['grants'] = zenodo_metadata['grants']
                 print(f"📋 Grants k přidání: {zenodo_metadata['grants']}")
             
-            print("\n3️⃣ Zkouším s grants (správný formát):")
+            print("\n3️⃣ Zkouším s grants:")
             updated_deposition = update_metadata(deposition_id, full_metadata)
             
             if updated_deposition:
-                print("✅ Metadata s grants fungují! Zkusíme přidat related_identifiers...")
+                print("✅ Metadata s grants fungují! Zkusíme přidat všechna zbývající pole...")
                 
-                # Přidáme related_identifiers
+                # Přidáme všechna zbývající pole z konvertovaných metadata
                 complete_metadata = full_metadata.copy()
-                if 'related_identifiers' in zenodo_metadata:
-                    complete_metadata['related_identifiers'] = zenodo_metadata['related_identifiers']
                 
-                print("\n4️⃣ Zkouším kompletní metadata:")
+                # Přidáme pole pouze pokud existují v zenodo_metadata
+                additional_fields = ['related_identifiers', 'subjects', 'contributors', 'communities']
+                for field in additional_fields:
+                    if field in zenodo_metadata:
+                        complete_metadata[field] = zenodo_metadata[field]
+                        if isinstance(zenodo_metadata[field], list):
+                            print(f"📋 Přidávám {field}: {len(zenodo_metadata[field])} položek")
+                        else:
+                            print(f"📋 Přidávám {field}: {zenodo_metadata[field]}")
+                
+                print(f"\n4️⃣ Zkouším kompletní metadata s poli: {list(complete_metadata.keys())}")
                 updated_deposition = update_metadata(deposition_id, complete_metadata)
     else:
         print("❌ Ani základní metadata nefungují. Zkusíme minimální verzi...")
@@ -418,93 +431,6 @@ if 'deposition_id' in locals():
         
         print("\n🔧 Zkouším minimální metadata:")
         updated_deposition = update_metadata(deposition_id, minimal_metadata)
-
-# %% [markdown]
-# ## Správný formát grants pole podle Zenodo API
-
-# %%
-print("📋 PŘIDANÁ POLE do konverze:")
-print("=" * 40)
-print()
-print("✅ SUBJECTS:")
-print("  - Podporuje kontrolované slovníky")
-print("  - Format: term + identifier + scheme")
-print("  - Příklad z YAMLu: Astronomy, Computer science, etc.")
-print()
-print("✅ CONTRIBUTORS:")
-print("  - Přispěvatelé (ne autoři)")
-print("  - Format: name + type + affiliation + orcid")
-print("  - Typy: DataCurator, Editor, Supervisor, etc.")
-print()
-print("✅ COMMUNITIES:")
-print("  - Komunity na Zenodo")
-print("  - Format: identifier")
-print("  - Příklad: eosc-cz-summer-workshop")
-print()
-print("📝 YAML příklad:")
-print("contributors:")
-print("  - name: Hošková, Lucie")
-print("    type: DataCurator")
-print("    affiliation: Univerzita Karlova")
-print("    orcid: 0009-0001-9695-2342")
-print()
-print("communities:")
-print("  - id: eosc-cz-summer-workshop")
-
-# %%
-def create_safe_zenodo_metadata(yaml_data):
-    """Vytvoří bezpečnou verzi metadat bez problematických polí"""
-    
-    # Konverze data
-    pub_date = yaml_data['publication_date']
-    if hasattr(pub_date, 'strftime'):
-        pub_date = pub_date.strftime('%Y-%m-%d')
-    else:
-        pub_date = str(pub_date)
-    
-    # Pouze základní bezpečná metadata
-    safe_metadata = {
-        'title': yaml_data['title'],
-        'upload_type': 'dataset',
-        'description': yaml_data.get('description', f"Dataset: {yaml_data['title']}"),
-        'language': yaml_data['language']['id'],
-        'creators': []
-    }
-    
-    # Autoři - pouze základní informace
-    for creator in yaml_data.get('creators', []):
-        safe_creator = {
-            'name': f"{creator['family_name']}, {creator['given_name']}"
-        }
-        # ORCID pouze pokud je validní
-        if 'orcid' in creator and creator['orcid'].startswith('0000-'):
-            safe_creator['orcid'] = creator['orcid']
-        # Affiliation jako string
-        if 'affiliation_text' in creator:
-            safe_creator['affiliation'] = creator['affiliation_text']
-        
-        safe_metadata['creators'].append(safe_creator)
-    
-    # Klíčová slova - pouze jako seznam stringů
-    if 'keywords' in yaml_data and isinstance(yaml_data['keywords'], list):
-        safe_metadata['keywords'] = [str(kw) for kw in yaml_data['keywords']]
-    
-    # Licence - pouze základní ID
-    if 'license' in yaml_data and 'id' in yaml_data['license']:
-        safe_metadata['license'] = yaml_data['license']['id']
-    
-    return safe_metadata
-
-# Vytvoříme bezpečnou verzi metadat
-safe_zenodo_metadata = create_safe_zenodo_metadata(metadata_yaml)
-
-print("🛡️ Bezpečná metadata vytvořena:")
-try:
-    print(json.dumps(safe_zenodo_metadata, indent=2, ensure_ascii=False))
-except Exception as e:
-    print(f"❌ Chyba při zobrazení: {e}")
-    for key, value in safe_zenodo_metadata.items():
-        print(f"  {key}: {value}")
 
 # %% [markdown]
 # ## Krok 5: Vytvoření ukázkových dat pro upload
@@ -634,6 +560,18 @@ def get_deposition_status(deposition_id):
         for file_info in deposition['files']:
             print(f"  - {file_info['filename']}: {file_info['filesize']} bytů")
         
+        # Zobrazíme také klíčová metadata
+        metadata = deposition['metadata']
+        print(f"\n📋 Metadata:")
+        print(f"  - Autoři: {len(metadata.get('creators', []))}")
+        print(f"  - Klíčová slova: {len(metadata.get('keywords', []))}")
+        if 'subjects' in metadata:
+            print(f"  - Subjects: {len(metadata['subjects'])}")
+        if 'contributors' in metadata:
+            print(f"  - Contributors: {len(metadata['contributors'])}")
+        if 'grants' in metadata:
+            print(f"  - Grants: {len(metadata['grants'])}")
+        
         return deposition
     else:
         print("❌ Chyba při získávání stavu:")
@@ -702,6 +640,13 @@ if 'deposition_id' in locals():
     print(f"\n🔗 Odkazy:")
     print(f"Sandbox záznam: https://sandbox.zenodo.org/deposit/{deposition_id}")
     
+    print(f"\n📊 Zpracovaná metadata:")
+    for field in zenodo_metadata.keys():
+        if isinstance(zenodo_metadata[field], list):
+            print(f"  - {field}: {len(zenodo_metadata[field])} položek")
+        else:
+            print(f"  - {field}: ✓")
+    
 else:
     print("❌ Záznam nebyl vytvořen - zkontrolujte ACCESS_TOKEN")
 
@@ -711,6 +656,7 @@ print("• Jak konvertovat metadata do formátu Zenodo")
 print("• Jak vytvořit nový záznam přes API")
 print("• Jak nahrát soubory")
 print("• Jak publikovat záznam")
+print("• Jak řešit problematická pole (grants, subjects, contributors)")
 
 print(f"\n🔧 Pro vlastní použití:")
 print("1. Získejte access token na https://sandbox.zenodo.org/account/settings/applications/tokens/new/")
