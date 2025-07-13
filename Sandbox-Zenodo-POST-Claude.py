@@ -617,13 +617,117 @@ def publish_deposition(deposition_id, confirm=False):
         print(f"Chyba: {response.text}")
         return None
 
-# Ukážeme možnost publikování (bez skutečného provedení)
-print("📢 Možnost publikování:")
+# Ukážeme možnost publikování a skutečně publikujme (pokud uživatel chce)
+print("📢 Publikování záznamu:")
 if 'deposition_id' in locals():
-    print(f"Pro publikování záznamu {deposition_id} použijte:")
+    print(f"Záznam {deposition_id} je připraven k publikování.")
+    print("⚠️  POZOR: Publikování je nevratná akce!")
+    print()
+    print("Pro publikování spusťte:")
     print(f"published_record = publish_deposition({deposition_id}, confirm=True)")
+    print()
+    
+    # Automaticky publikujeme pro workshop (v sandbox prostředí je to bezpečné)
+    print("🎓 Pro workshop automaticky publikujeme záznam...")
+    published_record = publish_deposition(deposition_id, confirm=True)
+    
+    if published_record:
+        print("\n🎉 ZÁZNAM ÚSPĚŠNĚ PUBLIKOVÁN!")
+        print(f"DOI: {published_record.get('doi', 'N/A')}")
+        if 'links' in published_record and 'record_html' in published_record['links']:
+            print(f"URL: {published_record['links']['record_html']}")
 else:
-    print("Záznam nebyl vytvořen - nelze publikovat")
+    print("❌ Záznam nebyl vytvořen - nelze publikovat")
+
+# %% [markdown]
+# ## Diagnostika communities - proč se nevložila
+
+# %%
+def search_communities(query="", size=20):
+    """Vyhledá komunity v Zenodo"""
+    
+    url = f"{ZENODO_API_URL}/communities"
+    params = {
+        'size': size
+    }
+    if query:
+        params['q'] = query
+    
+    print(f"🔍 Vyhledávám komunity...")
+    print(f"URL: {url}")
+    print(f"Parametry: {params}")
+    
+    response = requests.get(url, params=params)
+    
+    print(f"📥 Odpověď ze serveru:")
+    print(f"Status kód: {response.status_code}")
+    
+    if response.status_code == 200:
+        communities_data = response.json()
+        communities = communities_data.get('hits', {}).get('hits', [])
+        total = communities_data.get('hits', {}).get('total', 0)
+        
+        print(f"✅ Nalezeno {total} komunit (zobrazeno prvních {len(communities)}):")
+        
+        for community in communities:
+            comm_id = community.get('id', 'N/A')
+            title = community.get('metadata', {}).get('title', 'Bez názvu')
+            description = community.get('metadata', {}).get('description', '')
+            
+            print(f"  📋 ID: {comm_id}")
+            print(f"     Název: {title}")
+            if description and len(description) > 100:
+                description = description[:100] + "..."
+            print(f"     Popis: {description}")
+            print()
+        
+        return communities
+    else:
+        print(f"❌ Chyba při vyhledávání komunit:")
+        print(f"Chyba: {response.text}")
+        return []
+
+def check_community_exists(community_id):
+    """Zkontroluje zda komunita existuje"""
+    
+    url = f"{ZENODO_API_URL}/communities/{community_id}"
+    
+    print(f"🔍 Kontroluji existenci komunity: {community_id}")
+    
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        community = response.json()
+        print(f"✅ Komunita '{community_id}' existuje!")
+        print(f"Název: {community.get('metadata', {}).get('title', 'N/A')}")
+        return True
+    elif response.status_code == 404:
+        print(f"❌ Komunita '{community_id}' neexistuje!")
+        return False
+    else:
+        print(f"❓ Chyba při kontrole komunity: {response.status_code}")
+        print(f"Odpověď: {response.text}")
+        return False
+
+# Zkontrolujeme vaši komunitu z YAML
+yaml_communities = metadata_yaml.get('communities', [])
+if yaml_communities:
+    print("🔍 KONTROLA KOMUNIT Z YAML:")
+    print("=" * 40)
+    
+    for community in yaml_communities:
+        comm_id = community.get('id') if isinstance(community, dict) else community
+        print(f"\nKontroluje komunitu: {comm_id}")
+        exists = check_community_exists(comm_id)
+        
+        if not exists:
+            print(f"💡 Zkusíme vyhledat podobné komunity...")
+            similar_communities = search_communities(query=comm_id, size=5)
+
+# Vyhledejme workshop komunity
+print("\n🎓 WORKSHOP KOMUNITY:")
+print("=" * 30)
+workshop_communities = search_communities(query="workshop", size=10)
 
 # %% [markdown]
 # ## Shrnutí workshopu
