@@ -1,16 +1,17 @@
+# Přepište vše, co můžete, aby byl záznam skutečně váš
 title: Ukázkový dataset pro workshop
 upload_type: dataset
 description: |
   Krátký popis datasetu, jeho účel, obsah a možnost reprodukce.
 publication_date: 2025-07-15
-language: cs
+language: cze
 
 creators:
-  - name: Mikšík, Daniel
-    orcid: 0009-0008-6214-4356
+  - name: Příjmení1, Jméno1
+    orcid: xxxx-xxxx-xxxx-xxxx
     affiliation: Masarykova univerzita
-  - name: Janíček, Milan
-    orcid: 0000-0002-8271-3674
+  - name: Příjmení2, Jméno2
+    orcid: xxxx-xxxx-xxxx-xxxx
     affiliation: Univerzita Karlova
 
 keywords:
@@ -39,10 +40,10 @@ related_identifiers:
     relation: isSupplementTo
 
 contributors:
-  - name: Hošková, Lucie
+  - name: Příjmení3, Jméno3
     type: DataCurator
     affiliation: Univerzita Karlova
-    orcid: 0009-0001-9695-2342
+    orcid: xxxx-xxxx-xxxx-xxxx
 
 communities:
   - identifier: eosc-cz-summer-workshop
